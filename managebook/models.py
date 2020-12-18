@@ -125,11 +125,28 @@ from djongo import models
 from django.contrib.auth.models import AbstractUser
 
 
+class GenreField(models.Model):
+    title = models.CharField(max_length=100, verbose_name='Название жанра')
+
+    def __str__(self):
+        return self.title
+
+
 class Genre(models.Model):
     title = models.CharField(max_length=100, verbose_name='Название жанра')
 
     class Meta:
         abstract = True
+
+    def __str__(self):
+        return self.title
+
+
+class AuthorField(models.Model):
+    name = models.CharField(max_length=200, verbose_name='Имя автора')
+
+    def __str__(self):
+        return self.name
 
 
 class Author(models.Model):
@@ -150,26 +167,48 @@ class Author(models.Model):
 
 
 class CommentLike(models.Model):
-    comment_like = models.IntegerField(default=0, blank=True)
+    comment_likes = models.IntegerField(default=0, blank=True)
 
     class Meta:
         abstract = True
+
+    # def __int__(self):
+    #     return self.comment_likes
+
+
+
+class CommentField(models.Model):
+    comment_like = models.ArrayField(
+        model_container=CommentLike,
+        blank=True
+    )
+
+    text = models.TextField(max_length=200)
+    User = models.ArrayField(model_container=Author, )
+
+    def __str__(self):
+        return self.text
 
 
 class Comment(models.Model):
-    # comment_like = models.EmbeddedField(
-    #     model_container=CommentLike,
-    # )
+    comment_like = models.ArrayField(
+        model_container=CommentLike,
+        blank=True
+    )
 
     text = models.TextField(max_length=200)
-    User = models.ArrayField(model_container=Author,
-    )
+    User = models.ArrayField(model_container=Author, )
 
     class Meta:
         abstract = True
 
+    # def __str__(self):
+    #     return f'{self.text, self.User, self.comment_like}'
+        # return self.objects.all()
+
 
 class Book(models.Model):
+    _id = models.ObjectIdField()
     title = models.CharField(max_length=255)
     slug = models.SlugField()
     body_text = models.TextField()
@@ -177,16 +216,11 @@ class Book(models.Model):
     genre = models.ArrayField(
         model_container=Genre,
     )
-
     authors = models.ArrayField(
         model_container=Author,
     )
-    # authors = models.ArrayReferenceField(
-    #     to=Author,
-    #     on_delete=models.CASCADE,
-    # )
     pub_date = models.DateField(auto_now_add=True)
-    rating = models.IntegerField()
+    rating = models.IntegerField(default=0, blank=True)
 
     # n_comments = models.IntegerField()
     comments = models.ArrayField(
@@ -194,9 +228,30 @@ class Book(models.Model):
         blank=True
     )
 
-    # comments = models.ArrayReferenceField(
-    #     to=Comment, on_delete=models.CASCADE,
-    #      )
+    def __str__(self):
+        return self.title
+
+
+class BookThroughFields(models.Model):
+    _id = models.ObjectIdField()
+    title = models.CharField(max_length=255)
+    slug = models.SlugField()
+    body_text = models.TextField()
+    objects = models.DjongoManager()
+    genre = models.ArrayReferenceField(
+        to=GenreField,
+        on_delete=models.CASCADE,
+    )
+    authors = models.ArrayReferenceField(
+        to=AuthorField,
+        on_delete=models.CASCADE,
+    )
+    pub_date = models.DateField(auto_now_add=True)
+    rating = models.IntegerField(default=0, blank=True)
+    # n_comments = models.IntegerField()
+    comments = models.ArrayReferenceField(
+        to=CommentField, on_delete=models.CASCADE,
+    )
 
     def __str__(self):
         return self.title
